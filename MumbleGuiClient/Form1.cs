@@ -53,6 +53,8 @@ namespace MumbleGuiClient
             protocol.personalMessageReceivedDelegate = PersonalMessageReceivedDelegate;
             protocol.encodedVoice = EncodedVoiceDelegate;
             protocol.userJoinedDelegate = UserJoinedDelegate;
+            protocol.userStateChangedDelegate = UserStateChangedDelegate;
+            protocol.userStateChannelChangedDelegate = UserStateChannelChangedDelegate;
             protocol.userLeftDelegate = UserLeftDelegate;
             protocol.channelJoinedDelegate = ChannelJoinedDelegate;
             protocol.channelLeftDelegate = ChannelLeftDelegate;
@@ -320,55 +322,68 @@ namespace MumbleGuiClient
                     channeParentlNode.Nodes.Add(channelNode);
             }
         }
+
         void ChannelLeftDelegate(BasicMumbleProtocol proto, Channel channel)
         {
             DeleteChannelNode(channel.Id, tvUsers.Nodes[0]);
         }
+
         void UserJoinedDelegate(BasicMumbleProtocol proto, User user)
         {
-            TreeNode<UserInfo> userNode = null;
-            if (tvUsers.Nodes.Count > 0)
-                userNode = (TreeNode<UserInfo>)GetUserNode(user.Id, tvUsers.Nodes[0]);
+            TreeNode<UserInfo> userNode = (TreeNode<UserInfo>)MakeUserNode(user);
+
+            TreeNode channelNode = GetChannelNode(user.Channel.Id, tvUsers.Nodes[0]);
+            if (channelNode == null)
+            {
+                channelNode = MakeChannelNode(user.Channel);
+
+                TreeNode parentChannelNode = GetChannelNode(user.Channel.Parent, tvUsers.Nodes[0]);
+                parentChannelNode.Nodes.Add(channelNode);
+            }
+            channelNode.Nodes.Add(userNode);
+        }
+
+        void UserStateChangedDelegate(BasicMumbleProtocol proto, User user)
+        {
+            TreeNode<UserInfo> userNode = (TreeNode<UserInfo>)GetUserNode(user.Id, tvUsers.Nodes[0]);
 
             if (userNode == null)
             {
-                userNode = (TreeNode<UserInfo>)MakeUserNode(user);
-                
-                TreeNode channelNode = GetChannelNode(user.Channel.Id, tvUsers.Nodes[0]);
-                if (channelNode == null)
-                {
-                    channelNode = MakeChannelNode(user.Channel);
-
-                    TreeNode parentChannelNode = GetChannelNode(user.Channel.Parent, tvUsers.Nodes[0]);
-                    parentChannelNode.Nodes.Add(channelNode);
-                }
-                channelNode.Nodes.Add(userNode);
+                //Just for safety:
+                //this should never happen as the UserJoinedDelegate should have already been called
+                //therefore the userNode should always exist when UserStateChangedDelegate is called
+                UserJoinedDelegate(proto, user);
             }
             else
             {
-                if (userNode.Value.Channel != user.Channel.Id)
-                {
-                    TreeNode channelNode = GetChannelNode(userNode.Value.Channel, tvUsers.Nodes[0]);
-                    channelNode.Nodes.Remove(userNode);
-
-                    channelNode = GetChannelNode(user.Channel.Id, tvUsers.Nodes[0]);
-                    channelNode.Nodes.Add(userNode);
-                }
-
                 userNode.Value = GetUserInfo(user);
             }
         }
+
+        void UserStateChannelChangedDelegate(BasicMumbleProtocol proto, User user, uint oldChannelId)
+        {
+            TreeNode<UserInfo> userNode = (TreeNode<UserInfo>)GetUserNode(user.Id, tvUsers.Nodes[0]);
+
+            GetChannelNode(oldChannelId, tvUsers.Nodes[0])
+                .Nodes.Remove(userNode);
+
+            GetChannelNode(user.Channel.Id, tvUsers.Nodes[0])
+                .Nodes.Add(userNode);
+        }
+
         private void AddPlayback(User user)
         {
             if (user.Id != connection.Protocol.LocalUser.Id)
                 SpeakerPlayback.AddPlayer(user.Id, user.Voice);
         }
+
         void UserLeftDelegate(BasicMumbleProtocol proto, User user)
         {
             DeleteUserNode(user.Id, tvUsers.Nodes[0]);
 
             SpeakerPlayback.RemovePlayer(user.Id);
         }
+
         void ChannelMessageReceivedDelegate(BasicMumbleProtocol proto, ChannelMessage message)
         {
             if (message.Channel.Equals(proto.LocalUser.Channel))
@@ -377,6 +392,7 @@ namespace MumbleGuiClient
                     tbLog.AppendText(string.Format("[{0:HH:mm:ss}] {1} to {2}: {3}\n", DateTime.Now, message.Sender.Name, message.Channel.Name, message.Text));
                 }));
         }
+
         void PersonalMessageReceivedDelegate(BasicMumbleProtocol proto, PersonalMessage message)
         {
             tbLog.BeginInvoke((MethodInvoker)(() =>
@@ -384,6 +400,7 @@ namespace MumbleGuiClient
                 tbLog.AppendText(string.Format("[{0:HH:mm:ss}] {1} to you: {2}\n", DateTime.Now, message.Sender.Name, message.Text));
             }));
         }
+
         void ServerConfigDelegate(BasicMumbleProtocol proto, MumbleProto.ServerConfig serverConfig)
         {
             tbLog.BeginInvoke((MethodInvoker)(() =>
