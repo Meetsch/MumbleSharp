@@ -370,58 +370,50 @@ namespace MumbleSharp
                 uint oldChannelId = RootChannel.Id;
 
                 //Update user in the dictionary
-                if (userState.ShouldSerializeSelfDeaf()
-                    && user.SelfDeaf != userState.SelfDeaf)
+                if (userState.ShouldSerializeSelfDeaf())
                 {
                     oldSelfDeaf = user.SelfDeaf;
                     user.SelfDeaf = userState.SelfDeaf;
                     triggerUserStateDeafChanged = true;
                 }
-                if (userState.ShouldSerializeSelfMute()
-                    && user.SelfMuted != userState.SelfMute)
+                if (userState.ShouldSerializeSelfMute())
                 {
                     oldSelfMuted = user.SelfMuted;
                     user.SelfMuted = userState.SelfMute;
                     triggerUserStateMutedChanged = true;
                 }
-                if (userState.ShouldSerializeMute()
-                    && user.Muted != userState.Mute)
+                if (userState.ShouldSerializeMute())
                 {
                     oldMuted = user.Muted;
                     user.Muted = userState.Mute;
                     triggerUserStateMutedChanged = true;
                 }
-                if (userState.ShouldSerializeDeaf()
-                    && user.Deaf != userState.Deaf)
+                if (userState.ShouldSerializeDeaf())
                 {
                     oldDeaf = user.Deaf;
                     user.Deaf = userState.Deaf;
                     triggerUserStateDeafChanged = true;
                 }
-                if (userState.ShouldSerializeSuppress()
-                    && user.Suppress != userState.Suppress)
+                if (userState.ShouldSerializeSuppress())
                 {
                     oldSuppress = user.Suppress;
                     user.Suppress = userState.Suppress;
                     triggerUserStateMutedChanged = true;
                 }
-                if (userState.ShouldSerializeName()
-                    && user.Name != userState.Name)
+                if (userState.ShouldSerializeName())
                 {
                     oldName = user.Name != null ? string.Copy(user.Name) : null;
                     user.Name = userState.Name;
                     triggerUserStateNameChanged = true;
                 }
-                if (userState.ShouldSerializeComment()
-                    && user.Comment != userState.Comment)
+                if (userState.ShouldSerializeComment())
                 {
                     oldComment = user.Comment != null ? string.Copy(user.Comment) : null;
                     user.Comment = userState.Comment;
                     triggerUserStateCommentChanged = true;
                 }
 
-                if (userState.ShouldSerializeChannelId()
-                    && user.Channel != ChannelDictionary[userState.ChannelId])
+                if (userState.ShouldSerializeChannelId())
                 {
                     if (user.Channel != null)
                         oldChannelId = user.Channel.Id;
